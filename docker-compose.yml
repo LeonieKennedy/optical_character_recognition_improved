@@ -1,0 +1,21 @@
+version: "3.9"
+services:
+  ui:
+    build:
+      dockerfile: Dockerfile
+      context: ./ui
+    ports:
+      - '3000:3000'
+    volumes:
+      - './images:/ui/src/Components/images'
+      - './ui:/ui'
+  ocr:
+    build:
+      dockerfile: Dockerfile
+      context: ./OCR
+    ports:
+      - '8000:8000'
+    volumes:
+      - './images:/app/images'
+      - './OCR:/app'
+      
