@@ -46,7 +46,7 @@ class ExtractLicencePlatesModel:
         boxes = []
         confidences = []
 
-        image_width, image_height = input_image.shape[:2]
+        image_width, image_height = input_image.shape[:2] # only get image width and height
         x_factor = image_width/self.INPUT_WIDTH
         y_factor = image_height/self.INPUT_HEIGHT
 
@@ -73,13 +73,16 @@ class ExtractLicencePlatesModel:
         
         # non-maximum supression
         index = cv2.dnn.NMSBoxes(filtered_boxes,confidences_np, 0.25, 0.45)
+        print("filtered boxes:", filtered_boxes)
+        print("confidences_np:", confidences_np)
+        print("index:", index)
         return filtered_boxes, confidences_np, index
 
 
     # extrating text
     def extract_text(self, image, bbox):
         x,y,width,height = bbox
-        licence_plate = image[y:y+height, x:x+width]
+        licence_plate = image[y:y+height, x:x+width] # isolate license plate from image
         extracted_text = ""
         cv2.imwrite("licence.jpg", licence_plate)
         if 0 in licence_plate.shape:
@@ -90,6 +93,8 @@ class ExtractLicencePlatesModel:
 
             for box, text in results:
                 extracted_text = extracted_text + text
+        
+        return extracted_text
 
 
     # Annotate input image with boxes and car reg
@@ -97,15 +102,12 @@ class ExtractLicencePlatesModel:
         licence_text = ""
         plate_detected = True
         for i in index:
-            print(i)
-            x,y,width,height =  licence_coords[i]
-            print(licence_coords[i])
+            x,y,width,height = licence_coords[i]
 
             # Plate detection confidence
             plate_confidence = confidences_np[i]
             confidence_text = 'plate: {:.0f}%'.format(plate_confidence*100)
             licence_text = ExtractLicencePlatesModel.extract_text(self, image, licence_coords[i])
-            print("lt", licence_text)
             # Highlight plate
             cv2.rectangle(image, (x,y), (x+width,y+height), (255,0,255) ,2)
             cv2.rectangle(image, (x,y-30), (x+width,y), (255,0,255), -1)
@@ -132,13 +134,10 @@ class ExtractLicencePlatesModel:
         start_time = datetime.now()
         img = io.imread(image_file_path)    
         # detect licence plates
-        print("detect")
         input_image, licence_plate_coordinates = ExtractLicencePlatesModel.detect_licence_plates(self, img)
         # filter licence plate coordinates
-        print("filter")
         filtered_coords, confidences_np, index = ExtractLicencePlatesModel.filter_licence_coords(self, input_image, licence_plate_coordinates)
         # annotate_image
-        print("annotate")
         annotated_image, extracted_text, plate_detected = ExtractLicencePlatesModel.annotate_image(self, img, filtered_coords, confidences_np, index)
 
         fig = px.imshow(annotated_image)
@@ -156,5 +155,5 @@ class ExtractLicencePlatesModel:
         return result
 
 model = ExtractLicencePlatesModel()
-text = ExtractLicencePlatesModel.get_text(model, "/home/iduadmin/PycharmProjects/OCR/Task3_images/london_traffic.jpg")
+text = ExtractLicencePlatesModel.get_text(model, "/home/iduadmin/PycharmProjects/OCR/Task3_images/car/FA57 ONE.jpg")
 print(text)
