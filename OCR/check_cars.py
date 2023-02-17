@@ -3,25 +3,9 @@
 
 from difflib import SequenceMatcher
 
-from mod_keras import KerasModel
-from mod_easyocr import EasyOCRModel
-from ocr_cars import ExtractLicencePlatesModel, ExtractLicencePlates
+from ocr_cars import ExtractLicencePlatesModel
 import os
-import keras_ocr
-from matplotlib import pyplot as plt
-import cv2
-import numpy as np
-import matplotlib.pyplot as plt
-from skimage.filters import threshold_mean
-from skimage.filters import threshold_otsu
 
-from skimage.util import invert
-from skimage.io import imread, imsave
-from skimage.color import rgb2gray
-from skimage.filters import threshold_otsu
-from skimage.filters import gaussian
-from scipy.ndimage import interpolation as inter
-import scipy
 from pre_processor import remove_shadows
 
 model = ExtractLicencePlatesModel()

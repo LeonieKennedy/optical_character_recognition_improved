@@ -1,21 +1,19 @@
-from fastapi import UploadFile, Query, FastAPI
+from fastapi import UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_offline import FastAPIOffline
-from datetime import datetime
 from tempfile import NamedTemporaryFile
 from pathlib import Path
 import shutil
 import cv2
 
-from mod_keras import KerasModel, Keras
-from mod_tesseract import TesseractModel, Tesseract
-from mod_easyocr import EasyOCRModel, EasyOCR
-from ocr_cars import ExtractLicencePlates, ExtractLicencePlatesModel
-from classify_image import ClassifyImage, ClassifyImageModel
-from easyocr_languages import easyocr_languages
+from ocr.ocr_keras import KerasModel
+from ocr.ocr_tesseract import TesseractModel
+from ocr.ocr_easyocr import EasyOCRModel
+from ocr.ocr_cars import ExtractLicencePlates, ExtractLicencePlatesModel
+from classify_image import ClassifyImageModel
 import pre_processor
 
-app = FastAPI()
+app = FastAPIOffline()
 
 origins = [
     "http://localhost:8000",
@@ -26,7 +24,7 @@ origins = [
 
 app.add_middleware(    
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[origins],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"])
@@ -38,52 +36,83 @@ car_reg_model = None
 classify_model = None
 processor_model = None
 
+
 # Pre-process image: includes adaptive thresholding, skew correction and noise removal
 def pre_process(image_file_path, thresholding, skew_correction, noise_removal):
     tmp_path = check_if_tmp_file(image_file_path)
 
-    image = pre_process_image(str(tmp_path), thresholding, skew_correction, noise_removal)
+    image = pre_processor.pre_process_image(str(tmp_path), thresholding, skew_correction, noise_removal)
     tmp_path = '/tmp/processed_image.png'
     cv2.imwrite(tmp_path, image)
 
     return str(tmp_path)
 
+
 # Extract text using Keras
 @app.post("/keras")
-def keras(image_file_path: UploadFile, thresholding: bool = False, skew_correction: bool = False, noise_removal: bool = False):
+def keras(image_file_path: UploadFile,
+          thresholding: bool = False,
+          skew_correction: bool = False,
+          noise_removal: bool = False):
+
     global keras_model
 
     tmp_path = check_if_tmp_file(image_file_path)
     new_image = pre_process(tmp_path, thresholding, skew_correction, noise_removal)
     new_tmp_path = check_if_tmp_file(new_image)
 
-    if keras_model == None:
+    if keras_model is None:
         keras_model = KerasModel()
 
-    return KerasModel.get_text(keras_model, str(new_tmp_path))
+    results = KerasModel.get_text(keras_model, str(new_tmp_path))
+    results["source_file"] = image_file_path.filename
+
+    return results
 
 # Extract text using Tesseract
 @app.post("/tesseract")
-def tesseract(image_file_path: UploadFile, scale: int = 1, thresholding: bool = False, skew_correction: bool = False, noise_removal: bool = False):
+def tesseract(image_file_path: UploadFile,
+              scale: int = 1,
+              thresholding: bool = False,
+              skew_correction: bool = False,
+              noise_removal: bool = False):
+
     global tesseract_model
 
     tmp_path = check_if_tmp_file(image_file_path)
     new_image = pre_process(tmp_path, thresholding, skew_correction, noise_removal)
     new_tmp_path = check_if_tmp_file(new_image)
 
-    if tesseract_model == None:
+    if tesseract_model is None:
         tesseract_model = TesseractModel()
 
-    return TesseractModel.get_text(model, str(new_tmp_path), scale)
+    results = TesseractModel.get_text(tesseract_model, str(new_tmp_path), scale)
+    results["source_file"] = image_file_path.filename
+
+    return results
+
 
 # Extract text using EasyOCR
 @app.post("/easyocr")
-def easyocr(image_file_path: UploadFile, language: str, paragraph: bool = False, thresholding: bool = False, skew_correction: bool = False, noise_removal: bool = False):    
+def easyocr(image_file_path: UploadFile,
+            language: str,
+            paragraph: bool = False,
+            thresholding: bool = False,
+            skew_correction: bool = False,
+            noise_removal: bool = False):
+    global easyocr_model
+
     tmp_path = check_if_tmp_file(image_file_path)
     new_image = pre_process(tmp_path, thresholding, skew_correction, noise_removal)
-    new_tmp_path = check_if_tmp_file(new_image)    
-    model = EasyOCRModel()
-    return EasyOCRModel.get_text(model, str(new_tmp_path), language, paragraph)
+    new_tmp_path = check_if_tmp_file(new_image)
+
+    if easyocr_model is None:
+        easyocr_model = EasyOCRModel()
+
+    results = EasyOCRModel.get_text(easyocr_model, str(new_tmp_path), language, paragraph)
+    results["source_file"] = image_file_path.filename
+
+    return results
 
 # Extract car registration plates from images
 @app.post("/get_car_reg")
@@ -92,54 +121,62 @@ def get_car_reg(image_file_path: UploadFile):
 
     tmp_path = check_if_tmp_file(image_file_path)
 
-    if car_reg_model == None:
+    if car_reg_model is None:
         car_reg_model = ExtractLicencePlatesModel()
-    
-    return ExtractLicencePlates.get_text(car_reg_model, str(tmp_path))
+
+    results = ExtractLicencePlatesModel.get_text(car_reg_model, str(tmp_path))
+    results["source_file"] = image_file_path.filename
+
+    return results
 
 # Categorises image before deciding which ocr model to use.
 @app.post("/submit_image")
 def submit_image(image_file_path: UploadFile):
-    global classify_model, keras_model, car_reg_model
+    global classify_model, easyocr_model, keras_model, car_reg_model, elasticsearch_model
+
     tmp_path = check_if_tmp_file(image_file_path)
 
-    print("start")
     # load models and save them so that they don't need to be loaded for every run
-    if classify_model == None:
-       classify_model = ClassifyImageModel(model=None, processor=None)
-    
+    if classify_model is None:
+        classify_model = ClassifyImageModel(model=None, processor=None)
+
     category = ClassifyImageModel.classify_image(classify_model, str(tmp_path))
     print("classified")
     # remove image shadows
     processed_image = pre_processor.remove_shadows(str(tmp_path))
     processed_tmp_path = check_if_tmp_file(processed_image)
-    processed_tmp_path = tmp_path
+
     if category == "car":
         print("car")
-        if car_reg_model == None:
+        if car_reg_model is None:
             car_reg_model = ExtractLicencePlatesModel()
-        return ExtractLicencePlatesModel.get_text(car_reg_model, str(processed_tmp_path))
-    
-    if category == "document":
-        print("document")
-        if keras_model == None:
-            keras_model = KerasModel()
-        return KerasModel.get_text(keras_model, str(processed_tmp_path))
+        results = ExtractLicencePlatesModel.get_text(car_reg_model, str(processed_tmp_path))
 
-    if category == "message":
-        print("message")
-        if keras_model == None:
+    elif category == "document":
+        print("document")
+        if keras_model is None:
             keras_model = KerasModel()
-        return KerasModel.get_text(keras_model, str(processed_tmp_path))
+        results = KerasModel.get_text(keras_model, str(processed_tmp_path))
+
+    elif category == "texting":
+        print("texting")
+        if easyocr_model is None:
+            easyocr_model = EasyOCRModel()
+        results = EasyOCRModel.get_text(easyocr_model, str(processed_tmp_path), "English", False)
 
     else:
         print("other")
-        if keras_model == None:
-            keras_model = KerasModel()
-        return KerasModel.get_text(keras_model, str(processed_tmp_path))
+        if easyocr_model is None:
+            easyocr_model = EasyOCRModel()
+
+        results = EasyOCRModel.get_text(easyocr_model, str(processed_tmp_path), "English", False)
+
+    results["source_file"] = image_file_path.filename
+
+    return results
 
 
-# Load all of the ocr and classification models - added to increase speed
+# Load all the ocr and classification models - added to increase speed
 @app.get("/load_all_models")
 def load_all_models():
     global classify_model, keras_model, easyocr_model, tesseract_model, car_reg_model

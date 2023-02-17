@@ -1,4 +1,3 @@
-import easyocr
 def easyocr_languages():
     languages = {
         "Abaza": "abq",
@@ -86,5 +85,3 @@ def easyocr_languages():
         "Vietnamese": "vi"
     }
     return languages
-
-reader = easyocr.Reader(["vi"])

@@ -1,15 +1,6 @@
-# file to be deleted once complete
-
 from PIL import Image
-import requests
-from transformers import CLIPProcessor, CLIPModel
-import clip
-import torch
-import os
-import shutil
 from pydantic import BaseModel
-
-
+from transformers import CLIPProcessor, CLIPModel
 
 
 class ClassifyImage(BaseModel):
@@ -24,26 +15,13 @@ class ClassifyImageModel:
         self.labels = ["car", "document", "texting"]
         self.threshold = 0.8
 
-        if model == None:
-            # self.model, self.processor = clip.load("ViT-B/32")
-            # torch.save(self.model, "./models/image_classifier_model.pt")
-            self.model = torch.load("./models/image_classifier_model.pt")
-
-            # torch.save(self.processor, "./models/image_classifier_processor.pt")
-            self.processor = torch.load("./models/image_classifier_processor.pt")
-
-            # self.model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
-            # torch.save(self.model, "./models/image_classifier_model.pt")
-
-            # self.model.save_model("./models/image_classifier_model.h5")
-            # self.processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")            
-            # self.processor.save_model("./models/image_classifier_processor.h5")
-            # torch.save(self.processor, "./models/image_classifier_processor.pt")
+        if model is None:
+            self.model = CLIPModel.from_pretrained("./models/image_classifier_model")
+            self.processor = CLIPProcessor.from_pretrained("./models/image_classifier_processor")
 
         else:
             self.model = model
             self.processor = processor
-        
 
     def classify_image(self, image_file_path):
         image = Image.open(image_file_path)
@@ -54,25 +32,19 @@ class ClassifyImageModel:
         logits_per_image = output.logits_per_image
         probs = logits_per_image.softmax(dim=-1).detach().numpy()[0]
 
-        
         count = 0
         found = False
         for i in probs:
-            if i > self.threshold: # if the label confidence is above the threshold(80%), it is that label
+            if i > self.threshold:  # if the label confidence is above the threshold(80%), it is that label
                 label = self.labels[count]
                 print("File name:", image_file_path)
                 print("Label:", self.labels[count])
                 found = True
             count = count + 1
 
-        if found == False:
+        if found is False:
             label = "other"
             print("File name:", image_file_path)
             print("Label: Other")
-        
-        # shutil.move(path_to_images +file_name, "../Task3_images/"+label+"/" + file_name)
-        # print("Prob:", probs)
 
         return label
-
-# ClassifyImageModel(model=None, processor=None)

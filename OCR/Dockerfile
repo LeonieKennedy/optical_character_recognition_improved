@@ -5,7 +5,6 @@ RUN apt-get update
 
 RUN apt install -y ffmpeg
 RUN apt-get install libsm6 libxext6 libgl1  -y
-# RUN apt-get install libgl1-mesa-glx -y
 RUN apt install tesseract-ocr -y
 RUN apt-get install -y python3-opencv
 
@@ -13,7 +12,7 @@ COPY requirements.txt requirements.txt
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
-RUN cp -r ./models/easyocr_models ~/.EasyOCR/model
+COPY "models/easyocr_models" "~/.EasyOCR/model"
 
 COPY . .
 
