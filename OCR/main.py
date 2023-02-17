@@ -24,11 +24,12 @@ origins = [
 
 app.add_middleware(    
     CORSMiddleware,
-    allow_origins=[origins],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"])
 
+# global models so that they only get loaded once
 keras_model = None
 tesseract_model = None
 easyocr_model = None
@@ -37,17 +38,7 @@ classify_model = None
 processor_model = None
 
 
-# Pre-process image: includes adaptive thresholding, skew correction and noise removal
-def pre_process(image_file_path, thresholding, skew_correction, noise_removal):
-    tmp_path = check_if_tmp_file(image_file_path)
-
-    image = pre_processor.pre_process_image(str(tmp_path), thresholding, skew_correction, noise_removal)
-    tmp_path = '/tmp/processed_image.png'
-    cv2.imwrite(tmp_path, image)
-
-    return str(tmp_path)
-
-
+################################## Optical character recognition #######################################
 # Extract text using Keras
 @app.post("/keras")
 def keras(image_file_path: UploadFile,
@@ -129,10 +120,23 @@ def get_car_reg(image_file_path: UploadFile):
 
     return results
 
+
+####################################### Pre-processing ######################################################
+# Pre-process image: includes adaptive thresholding, skew correction and noise removal
+def pre_process(image_file_path, thresholding, skew_correction, noise_removal):
+    tmp_path = check_if_tmp_file(image_file_path)
+
+    image = pre_processor.pre_process_image(str(tmp_path), thresholding, skew_correction, noise_removal)
+    tmp_path = '/tmp/processed_image.png'
+    cv2.imwrite(tmp_path, image)
+
+    return str(tmp_path)
+
+
 # Categorises image before deciding which ocr model to use.
 @app.post("/submit_image")
 def submit_image(image_file_path: UploadFile):
-    global classify_model, easyocr_model, keras_model, car_reg_model, elasticsearch_model
+    global classify_model, easyocr_model, keras_model, car_reg_model
 
     tmp_path = check_if_tmp_file(image_file_path)
 
@@ -141,31 +145,27 @@ def submit_image(image_file_path: UploadFile):
         classify_model = ClassifyImageModel(model=None, processor=None)
 
     category = ClassifyImageModel.classify_image(classify_model, str(tmp_path))
-    print("classified")
+    
     # remove image shadows
     processed_image = pre_processor.remove_shadows(str(tmp_path))
     processed_tmp_path = check_if_tmp_file(processed_image)
 
     if category == "car":
-        print("car")
         if car_reg_model is None:
             car_reg_model = ExtractLicencePlatesModel()
         results = ExtractLicencePlatesModel.get_text(car_reg_model, str(processed_tmp_path))
 
     elif category == "document":
-        print("document")
         if keras_model is None:
             keras_model = KerasModel()
         results = KerasModel.get_text(keras_model, str(processed_tmp_path))
 
     elif category == "texting":
-        print("texting")
         if easyocr_model is None:
             easyocr_model = EasyOCRModel()
         results = EasyOCRModel.get_text(easyocr_model, str(processed_tmp_path), "English", False)
 
     else:
-        print("other")
         if easyocr_model is None:
             easyocr_model = EasyOCRModel()
 
@@ -187,6 +187,7 @@ def load_all_models():
     tesseract_model = TesseractModel()
     car_reg_model = ExtractLicencePlatesModel()
 
+
 # Save file as temporary file
 def save_upload_file_tmp(upload_file: UploadFile) -> Path:
     try:
@@ -197,6 +198,7 @@ def save_upload_file_tmp(upload_file: UploadFile) -> Path:
     finally:
         upload_file.file.close()
     return tmp_path
+
 
 def check_if_tmp_file(query_file):
     try:

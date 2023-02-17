@@ -12,6 +12,7 @@ COPY requirements.txt requirements.txt
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
+# Copy easyocr models for each language into ~/.EasyOCR/model <- makes it work offline
 COPY "models/easyocr_models" "~/.EasyOCR/model"
 
 COPY . .

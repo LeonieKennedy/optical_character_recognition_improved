@@ -20,7 +20,7 @@ class EasyOCRModel:
             words = words + ' ' + word
 
         extracted_text = extracted_text + words + '\n'
-
+        
         return extracted_text
 
     # Sort words into the correct order
@@ -36,7 +36,7 @@ class EasyOCRModel:
             y_buffer = (y_max - y_min) / height_variation
             prev_y_max = y_max
             line[x_min] = text
-
+        
         # Once end of line is reaached add it to the extracted text
         else:
             extracted_text = EasyOCRModel.add_line_to_extracted_text(line, extracted_text)
@@ -66,7 +66,7 @@ class EasyOCRModel:
         prev_y_min = 0
         extracted_text = ""
         av_confidence = 0
-
+        
         # If paragraph == Flalse, confidence scores are generated
         if paragraph is False:
             count = 0
@@ -78,9 +78,9 @@ class EasyOCRModel:
                                                                                                   prev_y_max,
                                                                                                   y_buffer,
                                                                                                   line)
-                av_confidence = + confidence
-                count = + 1
-
+                av_confidence =+ confidence
+                count =+ 1
+            
             # Check to see if any words were detected
             try:
                 av_confidence = av_confidence / count
@@ -89,7 +89,7 @@ class EasyOCRModel:
 
         # Calculate the overall confidence for output
         else:
-            for (box, text) in results:
+            for (box, text) in results: 
                 extracted_text, prev_y_min, prev_y_max, y_buffer, line = EasyOCRModel.order_words(box,
                                                                                                   text,
                                                                                                   extracted_text,

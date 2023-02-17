@@ -2,8 +2,6 @@ from pytesseract import pytesseract
 import cv2
 from pydantic import BaseModel
 from datetime import datetime
-import pandas
-
 
 class Tesseract(BaseModel):
     source_file: str
@@ -14,8 +12,9 @@ class Tesseract(BaseModel):
 
 class TesseractModel:
     def init(self):
+        # path to tesseract on ubuntu
         pytesseract.pytesseract.tesseract_cmd = r"/usr/share/tesseract-ocr/4.00/tessdata"
-
+        
     def get_text(self, image_file_path, scale):
         start_time = datetime.now()
 
@@ -23,7 +22,7 @@ class TesseractModel:
         img = cv2.imread(image_file_path)
         height, width, channels = img.shape
         img = cv2.resize(img, ((height * scale), (width * scale)))
-
+        
         # Extract text
         text = pytesseract.image_to_string(img)
 

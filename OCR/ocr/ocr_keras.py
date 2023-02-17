@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import tensorflow
 import pickle
 from keras_ocr.detection import build_keras_model
-import string
+import string 
 
 
 class Keras(BaseModel):
@@ -35,9 +35,9 @@ class KerasModel:
             words = words + ' ' + word
 
         extracted_text = extracted_text + words + '\n'
-
+        
         return extracted_text
-
+    
     def get_text(self, image_file_path):
         start_time = datetime.now()
 
@@ -50,7 +50,7 @@ class KerasModel:
         fig, ax = plt.subplots()
         image = keras_ocr.tools.drawAnnotations(image=image, predictions=prediction)
         plt.savefig("./images/annotated_keras.jpg")
-
+        
         # Sort words into the correct order
         line = {}
         y_buffer = 0
@@ -58,7 +58,7 @@ class KerasModel:
         prev_y_min = 0
         extracted_text = ""
 
-        for text, box in prediction:
+        for text, box in prediction: 
             y_max = box[:, 1].max()  # highest y coordinate
             y_min = box[:, 1].min()  # lowest y coordinate
             x_min = box[:, 0].min()  # lowest x coordinate
@@ -69,6 +69,7 @@ class KerasModel:
                 y_buffer = (y_max - y_min) / height_variation
                 prev_y_max = y_max
                 line[x_min] = text
+                
             else:
                 extracted_text = KerasModel.add_line_to_complete(line, extracted_text)
 
@@ -86,5 +87,5 @@ class KerasModel:
             'confidence': None,
             'detection_time': (datetime.now() - start_time).total_seconds()
         }
-
+        
         return result

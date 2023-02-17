@@ -1,3 +1,5 @@
+# EasyOCR language mapping
+
 def easyocr_languages():
     languages = {
         "Abaza": "abq",
