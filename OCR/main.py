@@ -6,6 +6,7 @@ from pathlib import Path
 import shutil
 import cv2
 
+from ocr.ocr_messages import ExtractMessagesModel
 from ocr.ocr_keras import KerasModel
 from ocr.ocr_tesseract import TesseractModel
 from ocr.ocr_easyocr import EasyOCRModel
@@ -36,7 +37,7 @@ easyocr_model = None
 car_reg_model = None
 classify_model = None
 processor_model = None
-
+message_model = None
 
 ################################## Optical character recognition #######################################
 # Extract text using Keras
@@ -136,7 +137,7 @@ def pre_process(image_file_path, thresholding, skew_correction, noise_removal):
 # Categorises image before deciding which ocr model to use.
 @app.post("/submit_image")
 def submit_image(image_file_path: UploadFile):
-    global classify_model, easyocr_model, keras_model, car_reg_model
+    global classify_model, easyocr_model, keras_model, car_reg_model, message_model
 
     tmp_path = check_if_tmp_file(image_file_path)
 
@@ -161,9 +162,9 @@ def submit_image(image_file_path: UploadFile):
         results = KerasModel.get_text(keras_model, str(processed_tmp_path))
 
     elif category == "texting":
-        if easyocr_model is None:
-            easyocr_model = EasyOCRModel()
-        results = EasyOCRModel.get_text(easyocr_model, str(processed_tmp_path), "English", False)
+        if message_model is None:
+            message_model = ExtractMessagesModel()
+        results = ExtractMessagesModel.get_text(message_model, str(processed_tmp_path))
 
     else:
         if easyocr_model is None:
@@ -179,14 +180,14 @@ def submit_image(image_file_path: UploadFile):
 # Load all the ocr and classification models - added to increase speed
 @app.get("/load_all_models")
 def load_all_models():
-    global classify_model, keras_model, easyocr_model, tesseract_model, car_reg_model
+    global classify_model, keras_model, easyocr_model, tesseract_model, car_reg_model, message_model
     
     classify_model = ClassifyImageModel(model=None, processor=None)
     keras_model = KerasModel()
     easyocr_model = EasyOCRModel()
     tesseract_model = TesseractModel()
     car_reg_model = ExtractLicencePlatesModel()
-
+    message_model = ExtractMessagesModel()
 
 # Save file as temporary file
 def save_upload_file_tmp(upload_file: UploadFile) -> Path:
