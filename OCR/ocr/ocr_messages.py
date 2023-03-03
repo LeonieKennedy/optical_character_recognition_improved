@@ -27,8 +27,24 @@ class ExtractMessagesModel:
         self.CLASSES = ['group', 'message']
 
         # Load detector model
-        self.model = YOLO("./models/message_detector.pt")
+        self.model = YOLO("./models/best.pt")
 
+
+    # Order messages with top messages first and bottom messages last
+    def order_messages(coordinates, categories, confidences):
+        swapped = True
+        while swapped is True:
+            swapped = False
+
+            for i in range(0, len(coordinates) - 1):
+                if coordinates[i][1] > coordinates[i + 1][1]:
+                    coordinates[i], coordinates[i + 1] = coordinates[i + 1], coordinates[i]
+                    categories[i], categories[i+1] = categories[i+1], categories[i]
+                    confidences[i], confidences[i+1] = confidences[i+1], confidences[i]
+                    swapped = True
+
+
+        return coordinates, categories, confidences
 
     # Locate message boxes
     def detect_messages(self, input_image):
@@ -39,6 +55,7 @@ class ExtractMessagesModel:
         class_values = list(predictions)[0].boxes.cls.cpu().tolist()
         class_confidence= list(predictions)[0].boxes.conf.cpu().tolist()
 
+        message_coordinates, class_values, class_confidence = ExtractMessagesModel.order_messages(message_coordinates, class_values, class_confidence)
         print(predictions)
         return message_coordinates, class_values, class_confidence
 
@@ -81,34 +98,39 @@ class ExtractMessagesModel:
         message_text = ""
         message_detected = True
         all_text = ""
-        # message_array = []
+        message_array = []
+        centre_of_image = image.shape[1] / 2
         # for each message detected
         for i in range(len(names)):
             message_text = ExtractMessagesModel.extract_text(self, image, message_coords[i])
-            # message_array.append(message_text)
+            message_array.append(message_text)
             if names[i] == "message":
+                if (centre_of_image - message_coords[i][0]) < (message_coords[i][2] - centre_of_image):
+                    message_text = "Sent: " + message_text
+                else:
+                    message_text = "Received: " + message_text
                 all_text = all_text + "\n" + message_text
             else:
                 all_text = "Group Name: " + message_text + all_text
 
-        # if all_text != "":
-        #     for i in range(len(names)):
-        #         # message detection confidence
-        #         message_confidence = confidences_np[i]
-        #         confidence_text = names[i] + ": " + str((message_confidence * 100))[:5]
-        #         x, y, width, height = message_coords[i]
-        #         x = int(x)
-        #         y = int(y)
-        #         width = int(width)
-        #         height = int(height)
-        #
-        #         cv2.rectangle(image, (x, y), (width, height), (255, 0, 255), 2)
-        #         cv2.rectangle(image, (x, y - 30), (width, y), (255, 0, 255), -1)
-        #         cv2.rectangle(image, (x, height), (width, height + 25), (0, 0, 0), -1)
-        #
-        #         # Draw car reg
-        #         cv2.putText(image, confidence_text, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
-        #         cv2.putText(image, message_array[i], (x, height + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
+        if all_text != "":
+            for i in range(len(names)):
+                # message detection confidence
+                message_confidence = confidences_np[i]
+                confidence_text = names[i] + ": " + str((message_confidence * 100))[:5]
+                x, y, width, height = message_coords[i]
+                x = int(x)
+                y = int(y)
+                width = int(width)
+                height = int(height)
+
+                cv2.rectangle(image, (x, y), (width, height), (255, 0, 255), 2)
+                # cv2.rectangle(image, (x, y - 30), (width, y), (255, 0, 255), -1)
+                # cv2.rectangle(image, (x, height), (width, height + 25), (0, 0, 0), -1)
+
+                # Draw car reg
+                # cv2.putText(image, confidence_text, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+                # cv2.putText(image, message_array[i], (x, height + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
 
         if all_text == "message not detected" or all_text == "":
             print("no coords")
@@ -144,11 +166,12 @@ class ExtractMessagesModel:
                                                      confindences,
                                                      names)
 
-        # fig = px.imshow(annotated_image)
-        # fig.update_layout(width=1400, height=800, margin=dict(l=10, r=10, b=10, t=10))
-        # fig.update_xaxes(showticklabels=False).update_yaxes(showticklabels=False)
-        # fig.show()
-        # fig.write_image("plotly.png")
+        print(extracted_text)
+        fig = px.imshow(annotated_image)
+        fig.update_layout(width=1400, height=800, margin=dict(l=10, r=10, b=10, t=10))
+        fig.update_xaxes(showticklabels=False).update_yaxes(showticklabels=False)
+        fig.show()
+        fig.write_image("plotly.png")
 
         result = {
             'source_file': image_file_path,
@@ -161,5 +184,4 @@ class ExtractMessagesModel:
         return result
 
 model = ExtractMessagesModel()
-result = ExtractMessagesModel.get_text(model, "/home/iduadmin/Downloads/telegram_chat.png")
-print(result["text"])
+results = ExtractMessagesModel.get_text(model, "/home/iduadmin/Downloads/telegram_chat.png")

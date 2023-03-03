@@ -1,4 +1,4 @@
-from fastapi import UploadFile
+from fastapi import UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_offline import FastAPIOffline
 from tempfile import NamedTemporaryFile
@@ -38,6 +38,18 @@ car_reg_model = None
 classify_model = None
 processor_model = None
 message_model = None
+
+
+####################################### Pre-processing ######################################################
+# Pre-process image: includes adaptive thresholding, skew correction and noise removal
+def pre_process(image_file_path, thresholding, skew_correction, noise_removal):
+    tmp_path = check_if_tmp_file(image_file_path)
+
+    image = pre_processor.pre_process_image(str(tmp_path), thresholding, skew_correction, noise_removal)
+    tmp_path = '/tmp/processed_image.png'
+    cv2.imwrite(tmp_path, image)
+
+    return str(tmp_path)
 
 ################################## Optical character recognition #######################################
 # Extract text using Keras
@@ -121,22 +133,27 @@ def get_car_reg(image_file_path: UploadFile):
 
     return results
 
+# Extract messages from screenshots
+@app.post("/get_messages")
+def get_messages(image_file_path: UploadFile):
+    global message_model
 
-####################################### Pre-processing ######################################################
-# Pre-process image: includes adaptive thresholding, skew correction and noise removal
-def pre_process(image_file_path, thresholding, skew_correction, noise_removal):
     tmp_path = check_if_tmp_file(image_file_path)
 
-    image = pre_processor.pre_process_image(str(tmp_path), thresholding, skew_correction, noise_removal)
-    tmp_path = '/tmp/processed_image.png'
-    cv2.imwrite(tmp_path, image)
+    if message_model is None:
+        message_model = ExtractMessagesModel()
 
-    return str(tmp_path)
+    results = ExtractMessagesModel.get_text(message_model, str(tmp_path))
+    results["source_file"] = image_file_path.filename
+    with open("text.txt", "w+") as f:
+        f.write(results["text"])
+
+    return results
 
 
 # Categorises image before deciding which ocr model to use.
 @app.post("/submit_image")
-def submit_image(image_file_path: UploadFile):
+async def submit_image(image_file_path: UploadFile = File()):
     global classify_model, easyocr_model, keras_model, car_reg_model, message_model
 
     tmp_path = check_if_tmp_file(image_file_path)
@@ -146,7 +163,7 @@ def submit_image(image_file_path: UploadFile):
         classify_model = ClassifyImageModel(model=None, processor=None)
 
     category = ClassifyImageModel.classify_image(classify_model, str(tmp_path))
-    
+
     # remove image shadows
     processed_image = pre_processor.remove_shadows(str(tmp_path))
     processed_tmp_path = check_if_tmp_file(processed_image)
@@ -164,13 +181,16 @@ def submit_image(image_file_path: UploadFile):
     elif category == "texting":
         if message_model is None:
             message_model = ExtractMessagesModel()
-        results = ExtractMessagesModel.get_text(message_model, str(processed_tmp_path))
+        results = ExtractMessagesModel.get_text(message_model, str(tmp_path))
 
     else:
         if easyocr_model is None:
             easyocr_model = EasyOCRModel()
 
         results = EasyOCRModel.get_text(easyocr_model, str(processed_tmp_path), "English", False)
+
+    with open("text.txt", "w+") as f:
+        f.write(results["text"])
 
     results["source_file"] = image_file_path.filename
 

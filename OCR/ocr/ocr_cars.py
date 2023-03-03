@@ -27,7 +27,7 @@ class ExtractLicencePlatesModel:
         self.INPUT_HEIGHT = 640
 
         # Load detector model
-        self.model = cv2.dnn.readNetFromONNX('/home/iduadmin/PycharmProjects/OCR/OCR/models/license_plate_detector.onnx')
+        self.model = cv2.dnn.readNetFromONNX('./models/license_plate_detector.onnx')
         self.model.setPreferableBackend(cv2.dnn.DNN_BACKEND_OPENCV)
         self.model.setPreferableTarget(cv2.dnn.DNN_TARGET_CPU)
 
@@ -166,6 +166,3 @@ class ExtractLicencePlatesModel:
         }
 
         return result
-
-model = ExtractLicencePlatesModel()
-result = ExtractLicencePlatesModel.get_text(model, "/home/iduadmin/PycharmProjects/OCR/Task3_images/car/FA57 ONE.jpg")

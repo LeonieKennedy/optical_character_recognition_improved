@@ -22,3 +22,5 @@ docker-compose up
 - UI Link
 
     - http://0.0.0.0:3000
+
+## How to train models
