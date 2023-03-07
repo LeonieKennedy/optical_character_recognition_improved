@@ -7,7 +7,7 @@ from skimage import io
 import plotly.express as px
 from pydantic import BaseModel
 from datetime import datetime
-
+from PIL import Image
 
 class ExtractLicencePlates(BaseModel):
     source_file: str
@@ -21,7 +21,7 @@ class ExtractLicencePlatesModel:
     def __init__(self):
         # Load recogniser model
         self.reader = easyocr.Reader(['en'])
-        
+
         # Constants
         self.INPUT_WIDTH = 640 
         self.INPUT_HEIGHT = 640
@@ -136,7 +136,10 @@ class ExtractLicencePlatesModel:
     # Detect car licence plates and extract text
     def get_text(self, image_file_path):
         start_time = datetime.now()
-        img = io.imread(image_file_path)    
+
+        image_file_path = np.array(image_file_path, dtype="uint8")
+        img = cv2.cvtColor(image_file_path, cv2.COLOR_BGR2RGB)
+
         # detect licence plates
         input_image, licence_plate_coordinates = ExtractLicencePlatesModel.detect_licence_plates(self, img)
         # filter licence plate coordinates
@@ -158,7 +161,7 @@ class ExtractLicencePlatesModel:
         # fig.show()
 
         result = {
-            'source_file': image_file_path,
+            'source_file': "",
             'plate_detected': plate_detected,
             'text': extracted_text,
             'confidence': None,

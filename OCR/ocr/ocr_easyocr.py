@@ -2,7 +2,7 @@ import easyocr
 from .easyocr_languages import easyocr_languages
 from datetime import datetime
 from pydantic import BaseModel
-
+import numpy as np
 
 class EasyOCR(BaseModel):
     source_file: str
@@ -67,7 +67,7 @@ class EasyOCRModel:
         extracted_text = ""
         av_confidence = 0
         
-        # If paragraph == Flalse, confidence scores are generated
+        # If paragraph == False, confidence scores are generated
         if paragraph is False:
             count = 0
             for (box, text, confidence) in results:
@@ -102,7 +102,7 @@ class EasyOCRModel:
         extracted_text = EasyOCRModel.add_line_to_extracted_text(line, extracted_text)
 
         result = {
-            'source_file': image_file_path,
+            'source_file': "",
             'text': extracted_text,
             'confidence': av_confidence,
             'detection_time': (datetime.now() - start_time).total_seconds()

@@ -7,7 +7,7 @@ import plotly.express as px
 from pydantic import BaseModel
 from datetime import datetime
 from ultralytics import YOLO
-
+from PIL import Image
 class ExtractMessages(BaseModel):
     source_file: str
     message_detected: bool
@@ -27,7 +27,7 @@ class ExtractMessagesModel:
         self.CLASSES = ['group', 'message']
 
         # Load detector model
-        self.model = YOLO("./models/best.pt")
+        self.model = YOLO("./models/message_detector_snap.pt")
 
 
     # Order messages with top messages first and bottom messages last
@@ -48,7 +48,6 @@ class ExtractMessagesModel:
 
     # Locate message boxes
     def detect_messages(self, input_image):
-        # image = img.copy()
 
         predictions = self.model(input_image)
         message_coordinates = list(predictions)[0].boxes.xyxy.cpu().tolist()
@@ -67,8 +66,9 @@ class ExtractMessagesModel:
 
         for i in range(len(message_coordinates)):
             confidence = class_confidence[i]  # confidence of detecting message
-            if confidence > 0.4:  # 40%
+            if confidence > 0.75:  # 80%
                 names.append(self.CLASSES[int(class_values[i])])
+                print(confidence, message_coordinates)
                 confidences.append(confidence)
                 boxes.append(message_coordinates[i])
 
@@ -76,9 +76,9 @@ class ExtractMessagesModel:
 
     # extract text
     def extract_text(self, image, bbox):
-        x, y, width, height = bbox
+        x0, y0, x1, y1 = bbox
 
-        message = image[int(y):int(height), int(x):int(width)]  # isolate message from image
+        message = image[int(y0):int(y1), int(x0):int(x1)]  # isolate message from image
         extracted_text = ""
 
         # shape will be 0 if there were no message  detected
@@ -118,19 +118,19 @@ class ExtractMessagesModel:
                 # message detection confidence
                 message_confidence = confidences_np[i]
                 confidence_text = names[i] + ": " + str((message_confidence * 100))[:5]
-                x, y, width, height = message_coords[i]
-                x = int(x)
-                y = int(y)
-                width = int(width)
-                height = int(height)
+                x0, y0, x1, y1 = message_coords[i]
+                x0 = int(x0)
+                y0 = int(y0)
+                x1 = int(x1)
+                y1 = int(y1)
 
-                cv2.rectangle(image, (x, y), (width, height), (255, 0, 255), 2)
-                # cv2.rectangle(image, (x, y - 30), (width, y), (255, 0, 255), -1)
-                # cv2.rectangle(image, (x, height), (width, height + 25), (0, 0, 0), -1)
+                cv2.rectangle(image, (x0, y0), (x1, y1), (30, 144, 250), 2)
+                cv2.rectangle(image, (x0, y0 - 30), (x1, y0), (30, 144, 250), -1)
+                cv2.rectangle(image, (x0, y1), (x1, y1 + 25), (0, 0, 0), -1)
 
-                # Draw car reg
-                # cv2.putText(image, confidence_text, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
-                # cv2.putText(image, message_array[i], (x, height + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
+                # Draw message
+                cv2.putText(image, confidence_text, (x0, y0 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+                cv2.putText(image, message_array[i], (x0, y1 + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
 
         if all_text == "message not detected" or all_text == "":
             print("no coords")
@@ -147,9 +147,15 @@ class ExtractMessagesModel:
         return image, all_text, message_detected
 
     # Detect car message  and extract text
-    def get_text(self, image_file_path):
+    def get_text(self, img):
         start_time = datetime.now()
-        img = cv2.imread(image_file_path)
+
+        # convert PIL to OpenCV
+        pil_image = img.convert("RGB")
+        open_cv_image = np.array(pil_image)
+        img = open_cv_image[:, :, ::-1].copy()
+
+
         # detect message
         message_coordinates, class_values, class_confidence = ExtractMessagesModel.detect_messages(self, img)
         # filter message  coordinates
@@ -174,7 +180,7 @@ class ExtractMessagesModel:
         fig.write_image("plotly.png")
 
         result = {
-            'source_file': image_file_path,
+            'source_file': "",
             'message_detected': message_detected,
             'text': extracted_text,
             'confidence': None,
@@ -184,4 +190,7 @@ class ExtractMessagesModel:
         return result
 
 model = ExtractMessagesModel()
-results = ExtractMessagesModel.get_text(model, "/home/iduadmin/Downloads/telegram_chat.png")
+
+img = Image.open("/home/iduadmin/Downloads/telegram_chat.png")
+
+results = ExtractMessagesModel.get_text(model, img)

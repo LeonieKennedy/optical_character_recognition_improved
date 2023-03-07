@@ -15,11 +15,10 @@ class TesseractModel:
         # path to tesseract on ubuntu
         pytesseract.pytesseract.tesseract_cmd = r"/usr/share/tesseract-ocr/4.00/tessdata"
         
-    def get_text(self, image_file_path, scale):
+    def get_text(self, img, scale):
         start_time = datetime.now()
 
         # Scale image
-        img = cv2.imread(image_file_path)
         height, width, channels = img.shape
         img = cv2.resize(img, ((height * scale), (width * scale)))
         
@@ -27,7 +26,7 @@ class TesseractModel:
         text = pytesseract.image_to_string(img)
 
         result = {
-            'source_file': image_file_path,
+            'source_file': "",
             'text': text,
             'confidence': None,
             'detection_time': (datetime.now() - start_time).total_seconds()

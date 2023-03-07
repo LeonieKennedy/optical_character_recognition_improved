@@ -54,7 +54,14 @@ def adaptive_thresholding(image_file):
 
 # remove shadows
 def remove_shadows(image_file):
-    img = cv2.imread(image_file, -1)
+    print("here2", image_file)
+    # convert PIL to OpenCV
+    pil_image = image_file.convert("RGB")
+    open_cv_image = np.array(pil_image)
+    img = open_cv_image[:, :, ::-1].copy()
+
+
+    # img = cv2.imread(image_file, -1)
     rgb_planes = cv2.split(img)
 
     result_planes = []
@@ -67,28 +74,34 @@ def remove_shadows(image_file):
     result = cv2.merge(result_planes)
     result = cv2.fastNlMeansDenoisingColored(result, None, 1, 10, 7, 15)
 
-    shadowless_image_name = "shadowless_image.jpg"
-    cv2.imwrite(shadowless_image_name, result)
+    # shadowless_image_name = "shadowless_image.jpg"
+    # cv2.imwrite(shadowless_image_name, result)
 
-    return shadowless_image_name
+    return result
 
 
 # Create a new pre-processed image based on user input
 def pre_process_image(image_file, thresholding, skew, noise):
-    print(type(image_file))
+
+    # convert PIL to OpenCV
+    print("Image" , image_file)
+    pil_image = image_file.convert("RGB")
+    open_cv_image = np.array(pil_image)
+    img = open_cv_image[:, :, ::-1].copy()
+
     # Skew correction
     if skew is True:
-        new_img = skew_correction(image_file)
+        new_img = skew_correction(img)
     # Adaptive thresholding
     elif thresholding is True:
-        new_img = adaptive_thresholding(image_file)
+        new_img = adaptive_thresholding(img)
 
     # Noise removal
     elif noise is True:
-        new_img = noise_removal(image_file)
+        new_img = noise_removal(img)
 
     else:
-        new_img = cv2.imread(image_file)
+        return img
     print(type(new_img))
 
     return new_img

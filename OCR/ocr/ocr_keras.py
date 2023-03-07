@@ -38,13 +38,12 @@ class KerasModel:
         
         return extracted_text
     
-    def get_text(self, image_file_path):
+    def get_text(self, image):
         start_time = datetime.now()
 
         height_variation = 2  # +/- half of overall height of box to buffer
         # Extract text from input image
         pipeline = keras_ocr.pipeline.Pipeline(detector=self.detector, recognizer=self.recognizer)
-        image = keras_ocr.tools.read(image_file_path)
         prediction = pipeline.recognize([image])[0]
         # Annotate input image with boxes
         fig, ax = plt.subplots()
@@ -82,7 +81,7 @@ class KerasModel:
         extracted_text = KerasModel.add_line_to_complete(line, extracted_text)
 
         result = {
-            'source_file': image_file_path,
+            'source_file': "",
             'text': extracted_text,
             'confidence': None,
             'detection_time': (datetime.now() - start_time).total_seconds()
