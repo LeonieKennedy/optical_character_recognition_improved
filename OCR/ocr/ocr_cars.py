@@ -37,7 +37,6 @@ class ExtractLicencePlatesModel:
         blob = cv2.dnn.blobFromImage(input_image, 1/255, (self.INPUT_WIDTH, self.INPUT_HEIGHT), swapRB=True, crop=False)
         self.model.setInput(blob)
         predictions = self.model.forward()
-        print(predictions.shape)
         licence_plate_coordinates = predictions[0]
         
         return input_image, licence_plate_coordinates
@@ -55,9 +54,9 @@ class ExtractLicencePlatesModel:
         for i in range(len(licence_plate_coordinates)):
             rows = licence_plate_coordinates[i]
             confidence = rows[4]  # confidence of detecting licence plate
-            if confidence > 0.4:  # 40%
+            if confidence > 0:  # 40%
                 class_score = rows[5]  # probability score of licence plate
-                if class_score > 0.25:  # 25%
+                if class_score > 0:  # 25%
                     center_x, center_y, width, height = rows[0:4]
 
                     left = int((center_x - 0.5*width)*x_factor)
@@ -108,7 +107,8 @@ class ExtractLicencePlatesModel:
             # Plate detection confidence
             plate_confidence = confidences_np[i]
             confidence_text = 'plate: {:.0f}%'.format(plate_confidence*100)
-            licence_text = ExtractLicencePlatesModel.extract_text(self, image, licence_coords[i])
+            licence_text_plate = ExtractLicencePlatesModel.extract_text(self, image, licence_coords[i])
+            licence_text = licence_text + licence_text_plate + "\n"
 
         if licence_text == "number plate not detected" or licence_text == "":
             print("no coords")
@@ -123,13 +123,17 @@ class ExtractLicencePlatesModel:
 
         else:
             # Highlight plate
-            cv2.rectangle(image, (x, y), (x+width, y+height), (255, 0, 255), 2)
-            cv2.rectangle(image, (x, y-30), (x+width, y), (255, 0, 255), -1)
-            cv2.rectangle(image, (x, y+height), (x+width, y+height+25), (0, 0, 0), -1)
+            cv2.rectangle(image, (x, y), (x+width, y+height), (30, 144, 255), 3)
+            cv2.rectangle(image, (x, y-40), (x+width, y), (30, 144, 250), -2)
+            cv2.rectangle(image, (x, y+height), (x+width, y+height+40), (0, 0, 0), -2)
 
             # Draw car reg
-            cv2.putText(image, confidence_text, (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 1)
-            cv2.putText(image, licence_text, (x, y+height+27), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 1)
+            cv2.putText(image, confidence_text, (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 255, 255), 2)
+            cv2.putText(image, licence_text, (x, y+height+30), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 255, 0), 2)
+
+
+
+
 
         return image, licence_text, plate_detected
 
@@ -155,10 +159,10 @@ class ExtractLicencePlatesModel:
                                                      confidences_np,
                                                      index)
 
-        # fig = px.imshow(annotated_image)
-        # fig.update_layout(width=700, height=400, margin=dict(l=10, r=10, b=10, t=10))
-        # fig.update_xaxes(showticklabels=False).update_yaxes(showticklabels=False)
-        # fig.show()
+        fig = px.imshow(annotated_image)
+        fig.update_layout(width=700, height=400, margin=dict(l=10, r=10, b=10, t=10))
+        fig.update_xaxes(showticklabels=False).update_yaxes(showticklabels=False)
+        fig.show()
 
         result = {
             'source_file': "",
@@ -169,3 +173,9 @@ class ExtractLicencePlatesModel:
         }
 
         return result
+
+model = ExtractLicencePlatesModel()
+
+img = Image.open("/home/iduadmin/PycharmProjects/Automatic-License-Plate-Detection-main/images/N25.jpeg")
+
+results = ExtractLicencePlatesModel.get_text(model, img)

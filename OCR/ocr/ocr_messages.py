@@ -24,10 +24,10 @@ class ExtractMessagesModel:
         # Constants
         self.INPUT_WIDTH = 640 
         self.INPUT_HEIGHT = 640
-        self.CLASSES = ['group', 'message']
+        self.CLASSES = ['android', 'facebook', 'group', 'hangouts', 'imessage', 'instagram', 'line', 'received', 'sent', 'signal', 'skype', 'snapchat', 'telegram', 'tumblr', 'twitter', 'wechat', 'whatsapp']
 
         # Load detector model
-        self.model = YOLO("./models/message_detector_snap.pt")
+        self.model = YOLO("./models/best_send_rec.pt")
 
 
     # Order messages with top messages first and bottom messages last
@@ -53,9 +53,7 @@ class ExtractMessagesModel:
         message_coordinates = list(predictions)[0].boxes.xyxy.cpu().tolist()
         class_values = list(predictions)[0].boxes.cls.cpu().tolist()
         class_confidence= list(predictions)[0].boxes.conf.cpu().tolist()
-
         message_coordinates, class_values, class_confidence = ExtractMessagesModel.order_messages(message_coordinates, class_values, class_confidence)
-        print(predictions)
         return message_coordinates, class_values, class_confidence
 
     # Filter boxes based on confidence and probability scores
@@ -66,9 +64,13 @@ class ExtractMessagesModel:
 
         for i in range(len(message_coordinates)):
             confidence = class_confidence[i]  # confidence of detecting message
-            if confidence > 0.75:  # 80%
+            print(f"""
+            coords: {message_coordinates[i]}
+            confidence: {confidence}
+            class: {self.CLASSES[int(class_values[i])]}""")
+
+            if confidence > 0.8:  # 80%
                 names.append(self.CLASSES[int(class_values[i])])
-                print(confidence, message_coordinates)
                 confidences.append(confidence)
                 boxes.append(message_coordinates[i])
 
@@ -104,13 +106,14 @@ class ExtractMessagesModel:
         for i in range(len(names)):
             message_text = ExtractMessagesModel.extract_text(self, image, message_coords[i])
             message_array.append(message_text)
-            if names[i] == "message":
-                if (centre_of_image - message_coords[i][0]) < (message_coords[i][2] - centre_of_image):
-                    message_text = "Sent: " + message_text
-                else:
-                    message_text = "Received: " + message_text
-                all_text = all_text + "\n" + message_text
-            else:
+            if names[i] == "sent" or names[i] == "received":
+
+                # if (centre_of_image - message_coords[i][0]) < (message_coords[i][2] - centre_of_image):
+                #     message_text = "Sent: " + message_text
+                # else:
+                #     message_text = "Received: " + message_text
+                all_text = all_text + "\n" + names[i] + ": " + message_text
+            elif names[i] == "group":
                 all_text = "Group Name: " + message_text + all_text
 
         if all_text != "":
@@ -129,8 +132,8 @@ class ExtractMessagesModel:
                 cv2.rectangle(image, (x0, y1), (x1, y1 + 25), (0, 0, 0), -1)
 
                 # Draw message
-                cv2.putText(image, confidence_text, (x0, y0 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
-                cv2.putText(image, message_array[i], (x0, y1 + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
+                cv2.putText(image, confidence_text, (x0, y0 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255, 255, 255), 2)
+                cv2.putText(image, message_array[i], (x0, y1 + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 255, 0), 1)
 
         if all_text == "message not detected" or all_text == "":
             print("no coords")
@@ -172,7 +175,7 @@ class ExtractMessagesModel:
                                                      confindences,
                                                      names)
 
-        print(extracted_text)
+        print("\n\n\n\n"+extracted_text)
         fig = px.imshow(annotated_image)
         fig.update_layout(width=1400, height=800, margin=dict(l=10, r=10, b=10, t=10))
         fig.update_xaxes(showticklabels=False).update_yaxes(showticklabels=False)
@@ -191,6 +194,6 @@ class ExtractMessagesModel:
 
 model = ExtractMessagesModel()
 
-img = Image.open("/home/iduadmin/Downloads/telegram_chat.png")
+img = Image.open("/home/iduadmin/Downloads/whatsapp_chat.png")
 
 results = ExtractMessagesModel.get_text(model, img)

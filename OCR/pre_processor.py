@@ -2,7 +2,7 @@ import numpy as np
 from PIL import Image
 from scipy.ndimage import interpolation as inter
 import cv2
-
+import time
 
 # Get a score for each angle tested
 def find_score(arr, angle):
@@ -103,5 +103,22 @@ def pre_process_image(image_file, thresholding, skew, noise):
     else:
         return img
     print(type(new_img))
-
+    print("here")
     return new_img
+
+image_file_path = "/home/iduadmin/PycharmProjects/OCR (another copy)/Task3_images/car/W 553 HX.jpeg"
+
+img = cv2.imread(image_file_path)
+
+
+image = remove_shadows(image_file_path)
+
+cv2.imwrite("/home/iduadmin/PycharmProjects/OCR/OCR/image.png", image)
+
+image = noise_removal("/home/iduadmin/PycharmProjects/OCR/OCR/image.png")
+
+cv2.imwrite("/home/iduadmin/PycharmProjects/OCR/OCR/image.png", image)
+
+image = adaptive_thresholding("/home/iduadmin/PycharmProjects/OCR/OCR/image.png")
+
+cv2.imwrite("/home/iduadmin/PycharmProjects/OCR/OCR/image.png", image)
