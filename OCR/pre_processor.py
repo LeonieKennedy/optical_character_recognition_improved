@@ -82,43 +82,49 @@ def remove_shadows(image_file):
 
 # Create a new pre-processed image based on user input
 def pre_process_image(image_file, thresholding, skew, noise):
-
     # convert PIL to OpenCV
-    print("Image" , image_file)
-    pil_image = image_file.convert("RGB")
-    open_cv_image = np.array(pil_image)
-    img = open_cv_image[:, :, ::-1].copy()
+    cv2.imwrite("tmp_img.jpg", image_file)
+    # print("Image" , image_file)
+    # pil_image = image_file.convert("RGB")
+    # open_cv_image = np.array(pil_image)
+    # img = open_cv_image[:, :, ::-1].copy()
+
+
 
     # Skew correction
     if skew is True:
-        new_img = skew_correction(img)
+        new_img = skew_correction("tmp_img.jpg")
+        cv2.imwrite("tmp_img.jpg", new_img)
+
     # Adaptive thresholding
     elif thresholding is True:
-        new_img = adaptive_thresholding(img)
+        new_img = adaptive_thresholding("tmp_img.jpg")
+        cv2.imwrite("tmp_img.jpg", new_img)
+        new_img = cv2.imread("tmp_img.jpg")
 
     # Noise removal
     elif noise is True:
-        new_img = noise_removal(img)
+        new_img = noise_removal("tmp_img.jpg")
 
     else:
-        return img
+        return image_file
     print(type(new_img))
     print("here")
     return new_img
 
-image_file_path = "/home/iduadmin/PycharmProjects/OCR (another copy)/Task3_images/car/W 553 HX.jpeg"
-
-img = cv2.imread(image_file_path)
-
-
-image = remove_shadows(image_file_path)
-
-cv2.imwrite("/home/iduadmin/PycharmProjects/OCR/OCR/image.png", image)
-
-image = noise_removal("/home/iduadmin/PycharmProjects/OCR/OCR/image.png")
-
-cv2.imwrite("/home/iduadmin/PycharmProjects/OCR/OCR/image.png", image)
-
-image = adaptive_thresholding("/home/iduadmin/PycharmProjects/OCR/OCR/image.png")
-
-cv2.imwrite("/home/iduadmin/PycharmProjects/OCR/OCR/image.png", image)
+# image_file_path = "/home/iduadmin/PycharmProjects/OCR (another copy)/Task3_images/car/W 553 HX.jpeg"
+#
+# img = cv2.imread(image_file_path)
+#
+#
+# image = remove_shadows(image_file_path)
+#
+# cv2.imwrite("/home/iduadmin/PycharmProjects/OCR/OCR/image.png", image)
+#
+# image = noise_removal("/home/iduadmin/PycharmProjects/OCR/OCR/image.png")
+#
+# cv2.imwrite("/home/iduadmin/PycharmProjects/OCR/OCR/image.png", image)
+#
+# image = adaptive_thresholding("/home/iduadmin/PycharmProjects/OCR/OCR/image.png")
+#
+# cv2.imwrite("/home/iduadmin/PycharmProjects/OCR/OCR/image.png", image)

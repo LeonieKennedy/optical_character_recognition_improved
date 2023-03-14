@@ -1,10 +1,10 @@
 from fastapi import UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_offline import FastAPIOffline
-import cv2
 from PIL import Image
 import io
 
+import plotly.express as px
 from ocr.ocr_messages import ExtractMessagesModel
 from ocr.ocr_keras import KerasModel
 from ocr.ocr_tesseract import TesseractModel
@@ -167,32 +167,37 @@ async def submit_image(image_file_path: UploadFile=File()):
 
     # remove image shadows
     processed_image = pre_processor.remove_shadows(img)
-
-    if category == "vehicle":
-        if car_reg_model is None:
-            car_reg_model = ExtractLicencePlatesModel()
-        results = ExtractLicencePlatesModel.get_text(car_reg_model, processed_image)
-
-    elif category == "document":
-        if keras_model is None:
-            keras_model = KerasModel()
-        results = KerasModel.get_text(keras_model, processed_image)
-
-    elif category == "texting":
-        if message_model is None:
-            message_model = ExtractMessagesModel()
-        results = ExtractMessagesModel.get_text(message_model, img)
-
-    else:
-        if easyocr_model is None:
-            easyocr_model = EasyOCRModel()
-
-        results = EasyOCRModel.get_text(easyocr_model, processed_image, "English", False)
-
     with open("text.txt", "w+") as f:
+
+        if category == "vehicle":
+            if car_reg_model is None:
+                car_reg_model = ExtractLicencePlatesModel()
+            results = ExtractLicencePlatesModel.get_text(car_reg_model, processed_image)
+
+        elif category == "document":
+            if keras_model is None:
+                keras_model = KerasModel()
+
+            results = KerasModel.get_text(keras_model, processed_image)
+
+        elif category == "texting":
+            if message_model is None:
+                message_model = ExtractMessagesModel()
+            results = ExtractMessagesModel.get_text(message_model, img)
+            text = "App: " + results["app"] + "\n\n"
+            f.write(text)
+        else:
+            if easyocr_model is None:
+                easyocr_model = EasyOCRModel()
+
+            results = EasyOCRModel.get_text(easyocr_model, processed_image, "English", False)
+
+
         f.write(results["text"])
 
     results["source_file"] = image_file_path.filename
+
+
 
     return results
 

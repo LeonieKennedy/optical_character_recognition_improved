@@ -1,7 +1,6 @@
 import os
 import easyocr
 import cv2
-from matplotlib import pyplot as plt
 import numpy as np
 import plotly.express as px
 from pydantic import BaseModel
@@ -11,6 +10,7 @@ from PIL import Image
 class ExtractMessages(BaseModel):
     source_file: str
     message_detected: bool
+    app: str
     text: str
     detection_time: float
 
@@ -25,9 +25,8 @@ class ExtractMessagesModel:
         self.INPUT_WIDTH = 640 
         self.INPUT_HEIGHT = 640
         self.CLASSES = ['android', 'facebook', 'group', 'hangouts', 'imessage', 'instagram', 'line', 'received', 'sent', 'signal', 'skype', 'snapchat', 'telegram', 'tumblr', 'twitter', 'wechat', 'whatsapp']
-
         # Load detector model
-        self.model = YOLO("./models/best_send_rec.pt")
+        self.model = YOLO("./models/new_model.pt")
 
 
     # Order messages with top messages first and bottom messages last
@@ -69,7 +68,7 @@ class ExtractMessagesModel:
             confidence: {confidence}
             class: {self.CLASSES[int(class_values[i])]}""")
 
-            if confidence > 0.8:  # 80%
+            if confidence > 0.75:  # 80%
                 names.append(self.CLASSES[int(class_values[i])])
                 confidences.append(confidence)
                 boxes.append(message_coordinates[i])
@@ -86,7 +85,7 @@ class ExtractMessagesModel:
         # shape will be 0 if there were no message  detected
         if 0 in message.shape:
             print("no message")
-            return 'message not detected'
+            return ""
         else:
             results = self.reader.readtext(message, paragraph=True)
 
@@ -97,25 +96,24 @@ class ExtractMessagesModel:
 
     # Annotate input image with boxes and car reg
     def annotate_image(self, image, message_coords, confidences_np, names):
-        message_text = ""
         message_detected = True
+        app = "Unknown"
         all_text = ""
         message_array = []
-        centre_of_image = image.shape[1] / 2
+        print(names)
         # for each message detected
         for i in range(len(names)):
             message_text = ExtractMessagesModel.extract_text(self, image, message_coords[i])
             message_array.append(message_text)
             if names[i] == "sent" or names[i] == "received":
-
-                # if (centre_of_image - message_coords[i][0]) < (message_coords[i][2] - centre_of_image):
-                #     message_text = "Sent: " + message_text
-                # else:
-                #     message_text = "Received: " + message_text
+                print("m ", message_text)
                 all_text = all_text + "\n" + names[i] + ": " + message_text
             elif names[i] == "group":
                 all_text = "Group Name: " + message_text + all_text
+            else:
+                app = names[i]
 
+        print(all_text)
         if all_text != "":
             for i in range(len(names)):
                 # message detection confidence
@@ -135,19 +133,17 @@ class ExtractMessagesModel:
                 cv2.putText(image, confidence_text, (x0, y0 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255, 255, 255), 2)
                 cv2.putText(image, message_array[i], (x0, y1 + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (0, 255, 0), 1)
 
-        if all_text == "message not detected" or all_text == "":
+        if all_text == "":
             print("no coords")
             message_detected = False
-            message_text = ""
 
             results = self.reader.readtext(image, paragraph=True)
-            print("l:", results)
 
             for box, text in results:
-                message_text = message_text + text
+                all_text = all_text + text + "\n"
 
 
-        return image, all_text, message_detected
+        return image, all_text, message_detected, app
 
     # Detect car message  and extract text
     def get_text(self, img):
@@ -168,7 +164,7 @@ class ExtractMessagesModel:
                                                             class_values,
                                                             class_confidence)
         # annotate_image
-        annotated_image, extracted_text, message_detected = \
+        annotated_image, extracted_text, message_detected, app = \
             ExtractMessagesModel.annotate_image(self,
                                                      img,
                                                      filtered_coords,
@@ -185,6 +181,7 @@ class ExtractMessagesModel:
         result = {
             'source_file': "",
             'message_detected': message_detected,
+            'app': app,
             'text': extracted_text,
             'confidence': None,
             'detection_time': (datetime.now() - start_time).total_seconds(),
@@ -192,8 +189,8 @@ class ExtractMessagesModel:
 
         return result
 
-model = ExtractMessagesModel()
-
-img = Image.open("/home/iduadmin/Downloads/whatsapp_chat.png")
-
-results = ExtractMessagesModel.get_text(model, img)
+# model = ExtractMessagesModel()
+#
+# img = Image.open("/home/iduadmin/Downloads/telegram_chat.png")
+#
+# results = ExtractMessagesModel.get_text(model, img)
