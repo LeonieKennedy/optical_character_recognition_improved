@@ -24,9 +24,9 @@ class ExtractMessagesModel:
         # Constants
         self.INPUT_WIDTH = 640 
         self.INPUT_HEIGHT = 640
-        self.CLASSES = ['android', 'facebook', 'group', 'hangouts', 'imessage', 'instagram', 'line', 'received', 'sent', 'signal', 'skype', 'snapchat', 'telegram', 'tumblr', 'twitter', 'wechat', 'whatsapp']
+        self.CLASSES = ['android', 'facebook', 'group', 'hangouts', 'imessage', 'instagram', 'line', 'received', 'sent', 'signal', 'skype', 'snapchat', 'telegram', 'twitter', 'wechat', 'whatsapp']
         # Load detector model
-        self.model = YOLO("./models/new_model.pt")
+        self.model = YOLO("./models/message_detector.pt")
 
 
     # Order messages with top messages first and bottom messages last

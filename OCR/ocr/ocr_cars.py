@@ -166,11 +166,3 @@ class ExtractLicencePlatesModel:
         }
 
         return result
-
-
-# model = ExtractLicencePlatesModel()
-#
-# img = Image.open("/home/iduadmin/PycharmProjects/OCR (another copy)/Task3_images/london_traffic.jpg")
-#
-# results = ExtractLicencePlatesModel.get_text(model, img)
-# print(results)

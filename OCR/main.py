@@ -1,4 +1,4 @@
-from fastapi import UploadFile, File
+from fastapi import UploadFile, File, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_offline import FastAPIOffline
 from PIL import Image
@@ -9,7 +9,7 @@ from ocr.ocr_messages import ExtractMessagesModel
 from ocr.ocr_keras import KerasModel
 from ocr.ocr_tesseract import TesseractModel
 from ocr.ocr_easyocr import EasyOCRModel
-from ocr.ocr_cars import ExtractLicencePlates, ExtractLicencePlatesModel
+from ocr.ocr_cars import ExtractLicencePlatesModel
 from classify_image import ClassifyImageModel
 import pre_processor
 
@@ -180,7 +180,7 @@ async def submit_image(image_file_path: UploadFile=File()):
 
             results = KerasModel.get_text(keras_model, processed_image)
 
-        elif category == "texting":
+        elif category == "sms":
             if message_model is None:
                 message_model = ExtractMessagesModel()
             results = ExtractMessagesModel.get_text(message_model, img)
@@ -191,13 +191,12 @@ async def submit_image(image_file_path: UploadFile=File()):
                 easyocr_model = EasyOCRModel()
 
             results = EasyOCRModel.get_text(easyocr_model, processed_image, "English", False)
-
+        bytes_image = io.BytesIO()
+        img.save(bytes_image, format='PNG')
 
         f.write(results["text"])
 
     results["source_file"] = image_file_path.filename
-
-
 
     return results
 
@@ -213,4 +212,3 @@ def load_all_models():
     tesseract_model = TesseractModel()
     car_reg_model = ExtractLicencePlatesModel()
     message_model = ExtractMessagesModel()
-

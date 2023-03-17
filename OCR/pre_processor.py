@@ -2,7 +2,6 @@ import numpy as np
 from PIL import Image
 from scipy.ndimage import interpolation as inter
 import cv2
-import time
 
 # Get a score for each angle tested
 def find_score(arr, angle):
@@ -60,8 +59,6 @@ def remove_shadows(image_file):
     open_cv_image = np.array(pil_image)
     img = open_cv_image[:, :, ::-1].copy()
 
-
-    # img = cv2.imread(image_file, -1)
     rgb_planes = cv2.split(img)
 
     result_planes = []
@@ -74,22 +71,16 @@ def remove_shadows(image_file):
     result = cv2.merge(result_planes)
     result = cv2.fastNlMeansDenoisingColored(result, None, 1, 10, 7, 15)
 
-    # shadowless_image_name = "shadowless_image.jpg"
-    # cv2.imwrite(shadowless_image_name, result)
-
     return result
 
 
 # Create a new pre-processed image based on user input
 def pre_process_image(image_file, thresholding, skew, noise):
     # convert PIL to OpenCV
-    cv2.imwrite("tmp_img.jpg", image_file)
-    # print("Image" , image_file)
-    # pil_image = image_file.convert("RGB")
-    # open_cv_image = np.array(pil_image)
-    # img = open_cv_image[:, :, ::-1].copy()
-
-
+    pil_image = image_file.convert("RGB")
+    open_cv_image = np.array(pil_image)
+    img = open_cv_image[:, :, ::-1].copy()
+    cv2.imwrite("tmp_img.jpg", img)
 
     # Skew correction
     if skew is True:
@@ -107,24 +98,6 @@ def pre_process_image(image_file, thresholding, skew, noise):
         new_img = noise_removal("tmp_img.jpg")
 
     else:
-        return image_file
-    print(type(new_img))
-    print("here")
-    return new_img
+        return cv2.imread("tmp_img.jpg")
 
-# image_file_path = "/home/iduadmin/PycharmProjects/OCR (another copy)/Task3_images/car/W 553 HX.jpeg"
-#
-# img = cv2.imread(image_file_path)
-#
-#
-# image = remove_shadows(image_file_path)
-#
-# cv2.imwrite("/home/iduadmin/PycharmProjects/OCR/OCR/image.png", image)
-#
-# image = noise_removal("/home/iduadmin/PycharmProjects/OCR/OCR/image.png")
-#
-# cv2.imwrite("/home/iduadmin/PycharmProjects/OCR/OCR/image.png", image)
-#
-# image = adaptive_thresholding("/home/iduadmin/PycharmProjects/OCR/OCR/image.png")
-#
-# cv2.imwrite("/home/iduadmin/PycharmProjects/OCR/OCR/image.png", image)
+    return new_img

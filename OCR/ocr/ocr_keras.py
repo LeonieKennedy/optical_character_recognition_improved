@@ -44,11 +44,12 @@ class KerasModel:
         height_variation = 2  # +/- half of overall height of box to buffer
         # Extract text from input image
         pipeline = keras_ocr.pipeline.Pipeline(detector=self.detector, recognizer=self.recognizer)
+
         prediction = pipeline.recognize([image])[0]
         # Annotate input image with boxes
-        fig, ax = plt.subplots()
-        image = keras_ocr.tools.drawAnnotations(image=image, predictions=prediction)
-        plt.savefig("./images/annotated_keras.jpg")
+        # fig, ax = plt.subplots()
+        # new_image = keras_ocr.tools.drawAnnotations(image=image, predictions=prediction)
+        # plt.savefig("./images/annotated_keras.jpg")
         
         # Sort words into the correct order
         line = {}
