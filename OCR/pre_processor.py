@@ -55,11 +55,15 @@ def adaptive_thresholding(image_file):
 def remove_shadows(image_file):
     print("here2", image_file)
     # convert PIL to OpenCV
-    pil_image = image_file.convert("RGB")
-    open_cv_image = np.array(pil_image)
-    img = open_cv_image[:, :, ::-1].copy()
+    try:
+        pil_image = image_file.convert("RGB")
+        open_cv_image = np.array(pil_image)
+        img = open_cv_image[:, :, ::-1].copy()
+    except AttributeError:
+        img = image_file
 
     rgb_planes = cv2.split(img)
+
 
     result_planes = []
     for plane in rgb_planes:
@@ -77,10 +81,15 @@ def remove_shadows(image_file):
 # Create a new pre-processed image based on user input
 def pre_process_image(image_file, thresholding, skew, noise):
     # convert PIL to OpenCV
-    pil_image = image_file.convert("RGB")
-    open_cv_image = np.array(pil_image)
-    img = open_cv_image[:, :, ::-1].copy()
+    try:
+        pil_image = image_file.convert("RGB")
+        open_cv_image = np.array(pil_image)
+        img = open_cv_image[:, :, ::-1].copy()
+    except AttributeError:
+        img = image_file
+
     cv2.imwrite("tmp_img.jpg", img)
+
 
     # Skew correction
     if skew is True:

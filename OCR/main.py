@@ -180,7 +180,7 @@ async def submit_image(image_file_path: UploadFile=File()):
 
             results = KerasModel.get_text(keras_model, processed_image)
 
-        elif category == "sms":
+        elif category == "text message":
             if message_model is None:
                 message_model = ExtractMessagesModel()
             results = ExtractMessagesModel.get_text(message_model, img)

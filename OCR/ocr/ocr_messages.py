@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from datetime import datetime
 from ultralytics import YOLO
 from PIL import Image
+
 class ExtractMessages(BaseModel):
     source_file: str
     message_detected: bool
@@ -81,7 +82,6 @@ class ExtractMessagesModel:
 
         message = image[int(y0):int(y1), int(x0):int(x1)]  # isolate message from image
         extracted_text = ""
-
         # shape will be 0 if there were no message  detected
         if 0 in message.shape:
             print("no message")

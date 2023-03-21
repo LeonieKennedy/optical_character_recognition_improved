@@ -1,4 +1,8 @@
-App: wechat
+App: twitter
 
-Group Name: Lila Hansen
-sent: Erin accidentally created new universe_
+Group Name: Ciara Whitney
+sent: The Great Dane looked more like horse than dog:
+received: made myself peanut er sandwich as didn't want tO subsist on veggie crackers
+received: We have young kids who often walk into our room at night for various reasons including clowns in the closet:
+sent: The best key lime pie is still up for debate
+received: Of course, she loves her pink bunny slippers.

@@ -13,7 +13,7 @@ class Tesseract(BaseModel):
 class TesseractModel:
     def init(self):
         # path to tesseract on ubuntu
-        pytesseract.pytesseract.tesseract_cmd = r"/usr/share/tesseract-ocr/4.00/tessdata"
+        pytesseract.pytesseract.tesseract_cmd = r"/usr/bin/tesseract"
         
     def get_text(self, img, scale):
         start_time = datetime.now()

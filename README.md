@@ -18,9 +18,4 @@ docker-compose up
 
     - http://0.0.0.0:8000/docs#/
 
-
-- UI Link
-
-    - http://0.0.0.0:3000
-
 ## How to train models

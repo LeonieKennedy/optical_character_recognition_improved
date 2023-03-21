@@ -12,7 +12,7 @@ class ClassifyImage(BaseModel):
 
 class ClassifyImageModel:
     def __init__(self, model, processor):
-        self.labels = ["vehicle", "document", "sms"]  # 3 possible categories + other
+        self.labels = ["vehicle", "document", "text message"]  # 3 possible categories + other
         self.threshold = 0.6  # threshold = 75% -> any image with a confidence below this for all 3 categories is "other"
 
         # load pre-trained saved models
