@@ -1,4 +1,8 @@
 # Optical Character Recognition
+Identifies text in images. Specialises in car license plates, documents and text message screenshots.
+
+Custom dataset and trained YOLO models are used for license plates and text messages.
+
 ## How to run
 To run API, use the following command inside the OCR directory
 
@@ -23,4 +27,3 @@ docker-compose up
 
     - http://0.0.0.0:3000
 
-## How to train models
